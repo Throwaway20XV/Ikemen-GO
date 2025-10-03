@@ -1,0 +1,44 @@
+name: Test Android APK Build
+
+on:
+  workflow_dispatch:   # lets you run manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          $(go env GOPATH)/bin/gomobile init
+
+      - name: Create Hello World Go app
+        run: |
+          mkdir hello
+          cat <<EOF > hello/main.go
+          package main
+          import "golang.org/x/mobile/app"
+          func main() {
+            app.Main(func(a app.App) {})
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          $(go env GOPATH)/bin/gomobile build -target=android -o hello.apk ./hello
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: hello-apk
+          path: hello.apk
